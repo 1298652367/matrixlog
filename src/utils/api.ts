@@ -1,11 +1,14 @@
-import http from './http';
+import http, { AxiosRequestConfig } from 'axios';
 
 export const log_analysis = (data: File) => {
-  return http({
+  const formData = new FormData();
+  formData.append('file', data);
+
+  const config: AxiosRequestConfig<FormData> = {
     url: '/logmatrix/log_analysis',
     method: 'post',
-    auth_flag: false,
-    data
-  })
-}
-  
+    data: formData
+  };
+
+  return http(config);
+};
