@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { InboxOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { log_analysis } from '../../utils/api';
-import { message, Upload, Col, Divider, Row, Space, Table, Tag, Collapse } from 'antd';
+import { message, Upload, Col, Row, Table, Collapse } from 'antd';
 const { Column, ColumnGroup } = Table;
 
 import './index.scss'
@@ -74,34 +74,38 @@ const Home: React.FC = () => {
 
     const analysisLog = async (file: File) => {
         const response = await log_analysis(file);
+        //@ts-ignore
         let strres = response.result;
+
         let res = eval("(" + strres + ")");
         let ids = Object.keys(res);
         let playerInstances: PlayerInstance[] = [];
-        let instanceModules: InstanceModule[] = [];
+        let instanceModules: InstanceModule= {};
         let id: string
 
         for (id of ids) {
 
-            let finalResult = res[id].FinalResult;
+            let finalResult = res.id.FinalResult;
             if (finalResult === undefined) {
                 continue;
             }
             let modules = Object.keys(finalResult);
            
-            if (instanceModules[id] === undefined) {
-                
-                instanceModules[id] = {};
+            if (instanceModules.id === undefined) {
+                instanceModules.id = [];
             }
             let playerInstance: PlayerInstance = { instance_id: id, start_time: '空', end_time: '空' };
-            //@ts-ignore
-            let instanceModule = instanceModules[id];
+            
+            let instanceModule = instanceModules.id;
             for (let module of modules) {
-                let operations = res[id].FinalResult[module];
+                let operations = res.id.FinalResult[module];
+                //@ts-ignore
                 if (instanceModule[module] === undefined) {
-                    instanceModule[module] = [];
+                    //@ts-ignore
+                    instanceModule[module] = {};
                 }
-                let moduleOps = instanceModule[module];
+                //@ts-ignore
+                let moduleOps = instanceModule.module
                 for (let operation of operations) {
                     if (operation.Operation === 'Construct') {
                         playerInstance.start_time = operation.Timestamp;
@@ -115,8 +119,7 @@ const Home: React.FC = () => {
             playerInstances.push(playerInstance);
         }
         setPlayerInstances(playerInstances);
-        //@ts-ignore
-        // setCurrentModules(instanceModules[playerInstances[0].instance_id]);
+        setCurrentModules(instanceModules[playerInstances[0].instance_id]);
     };
 
     return (
