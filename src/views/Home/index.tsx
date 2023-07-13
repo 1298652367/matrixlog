@@ -72,14 +72,16 @@ const Home: React.FC = () => {
     const [currentModules, setCurrentModules] = useState<CurrentModul[]>([]);
 
     const analysisLog = async (file: File) => {
-        let currentModules: CurrentModul = {}
+
         const response = await log_analysis(file);
         let strres = response.data.result;
         
         let res = eval("(" + strres + ")");
         let ids = Object.keys(res);
-        let playerInstances: PlayerInstance[] = [];
+
         let instanceModules: InstanceModule= {};
+
+
         let id: string
 
         for (id of ids) {
@@ -91,19 +93,18 @@ const Home: React.FC = () => {
 
             if (instanceModules[parseInt(id)] === undefined) {
 
-                instanceModules[parseInt(id)] = {};
+                instanceModules[parseInt(id)] = [];
             }
             let playerInstance: PlayerInstance = { instance_id: id, start_time: '空', end_time: '空' };
             let instanceModule = instanceModules[parseInt(id)];
-            for (let module of modules) {
-                let operations = res.id.FinalResult[module];
-                //@ts-ignore
+            let module:string
+            for (module of modules) {
+                let operations = res[id].FinalResult[module] as Operation[];
                 if (instanceModule[module] === undefined) {
-                    //@ts-ignore
-                    instanceModule[module] = {};
+                    instanceModule[module] = [];
                 }
-                //@ts-ignore
-                let moduleOps = instanceModule.module
+                
+                let moduleOps = instanceModule[module]!;
                 for (let operation of operations) {
                     if (operation.Operation === 'Construct') {
                         playerInstance.start_time = operation.Timestamp;
@@ -116,14 +117,17 @@ const Home: React.FC = () => {
             }
             playerInstances.push(playerInstance);
         }
+       
         currentModules = instanceModules[playerInstances[0].instance_id];
 
         setPlayerInstances(playerInstances);
         setCurrentModules(currentModules);
 
-        currentModules = fun(currentModules)
-        console.log(currentModules)
-        items = currentModules;
+        let currentViewModules:CurrentViewModul;
+
+        currentViewModules = fun(currentModules)
+        console.log(currentViewModules)
+        items = currentViewModules;
        
     
     };
