@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { InboxOutlined } from '@ant-design/icons';
+import type { CollapseProps } from 'antd';
 import type { UploadProps } from 'antd';
 import { log_analysis } from '../../utils/api';
 import { message, Upload, Col, Row, Table, Collapse } from 'antd';
@@ -22,8 +23,16 @@ interface PlayerInstance {
 interface InstanceModule {
     [key: string]: Operation[];
 }
+type CurrentModul = Record<string, string[]>;
+
+type CurrentViewModul = {
+    key: string,
+    label: string,
+    children: string,
+}[];
 
 const { Dragger } = Upload;
+let items: CollapseProps['items']=[]
 
 const Home: React.FC = () => {
     const styles = {
@@ -37,12 +46,12 @@ const Home: React.FC = () => {
     const props: UploadProps = {
         name: 'file',
         multiple: true,
-       // action: 'http://172.21.240.26:9999/logmatrix/upload_logfile',
-       action:"/api/logmatrix/upload_logfile",
+        // action: 'http://172.21.240.26:9999/logmatrix/upload_logfile',
+        action: "/api/logmatrix/upload_logfile",
         maxCount: 1,
 
         onChange(info) {
-            
+
             const { status } = info.file;
             if (status !== 'uploading') {
                 console.log(info.file);
@@ -60,23 +69,13 @@ const Home: React.FC = () => {
         },
     };
     const [playerInstances, setPlayerInstances] = useState<PlayerInstance[]>([]);
-    const [currentModules, setCurrentModules] = useState<any[]>([{
-        key: '1',
-        label: 'title1',
-        children: 'content'
-    },{
-        key: '2',
-        label: 'title2',
-        children: 'conten2'
-    },{
-        key: '3',
-        label: 'title3',
-        children: 'content3'
-    }]);
+    const [currentModules, setCurrentModules] = useState<CurrentModul[]>([]);
 
     const analysisLog = async (file: File) => {
+        let currentModules: CurrentModul = {}
         const response = await log_analysis(file);
         let strres = response.data.result;
+        
         let res = eval("(" + strres + ")");
         let ids = Object.keys(res);
         let playerInstances: PlayerInstance[] = [];
@@ -84,19 +83,18 @@ const Home: React.FC = () => {
         let id: string
 
         for (id of ids) {
-
-            let finalResult = res.id.FinalResult;
+            let finalResult = res[id].FinalResult;
             if (finalResult === undefined) {
                 continue;
             }
             let modules = Object.keys(finalResult);
-           
-            if (instanceModules.id === undefined) {
-                instanceModules.id = [];
+
+            if (instanceModules[parseInt(id)] === undefined) {
+
+                instanceModules[parseInt(id)] = {};
             }
             let playerInstance: PlayerInstance = { instance_id: id, start_time: '空', end_time: '空' };
-            
-            let instanceModule = instanceModules.id;
+            let instanceModule = instanceModules[parseInt(id)];
             for (let module of modules) {
                 let operations = res.id.FinalResult[module];
                 //@ts-ignore
@@ -118,10 +116,32 @@ const Home: React.FC = () => {
             }
             playerInstances.push(playerInstance);
         }
+        currentModules = instanceModules[playerInstances[0].instance_id];
+
         setPlayerInstances(playerInstances);
-        setCurrentModules(instanceModules[playerInstances[0].instance_id]);
+        setCurrentModules(currentModules);
+
+        currentModules = fun(currentModules)
+        console.log(currentModules)
+        items = currentModules;
+       
+    
     };
 
+    
+    const fun = (value: CurrentModul) => {
+        const output: CurrentViewModul = [];
+        Object.keys(value).forEach((k, i) => {
+            output.push({
+                key: (i+1).toString(),
+                label: k,
+                children: value[k].join('-'),
+            })
+        })
+        return output
+    }
+
+   
     return (
         <>
             <Dragger {...props} >
@@ -152,7 +172,10 @@ const Home: React.FC = () => {
                 <Col flex={2}>
                 </Col>
                 <Col flex={12}>
-                    <Collapse items={currentModules} defaultActiveKey={['1']} onChange={onChange} />
+                    
+                    <Collapse items={items} defaultActiveKey={['1']} onChange={onChange} >
+                        </Collapse>
+                    
                 </Col>
             </Row>
         </>

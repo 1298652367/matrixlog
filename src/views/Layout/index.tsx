@@ -16,7 +16,7 @@ const GeekLayout = () => {
     <Layout>
       <Header className="header">
         <div className="logo" />
-        <div className='title'>动态可配置日志分析系统 V0.1</div>
+        <div className='title'>动态可配置日志分析系统</div>
         <div className="user-info">
           <span className="user-name">user.name</span>
           <span className="user-logout">
@@ -27,7 +27,7 @@ const GeekLayout = () => {
         </div>
       </Header>
       <Layout>
-        <Sider width={200} className="site-layout-background">
+        <Sider width={250} className="site-layout-background">
           <Menu
             mode="inline"
             theme="dark"
