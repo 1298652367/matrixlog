@@ -11,7 +11,8 @@ interface MyAxiosRequestConfig extends AxiosRequestConfig {
 const emitter = mitt();
 
 const http = axios.create({
-  baseURL: 'http://172.21.240.26:9999',
+  //baseURL: 'http://172.21.240.26:9999',
+  baseURL:"/api",
   timeout: 5000,
 });
 

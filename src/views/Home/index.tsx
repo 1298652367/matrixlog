@@ -37,10 +37,12 @@ const Home: React.FC = () => {
     const props: UploadProps = {
         name: 'file',
         multiple: true,
-        action: 'http://172.21.240.26:9999/logmatrix/upload_logfile',
+       // action: 'http://172.21.240.26:9999/logmatrix/upload_logfile',
+       action:"/api/logmatrix/upload_logfile",
         maxCount: 1,
 
         onChange(info) {
+            
             const { status } = info.file;
             if (status !== 'uploading') {
                 console.log(info.file);
@@ -74,9 +76,7 @@ const Home: React.FC = () => {
 
     const analysisLog = async (file: File) => {
         const response = await log_analysis(file);
-        //@ts-ignore
-        let strres = response.result;
-
+        let strres = response.data.result;
         let res = eval("(" + strres + ")");
         let ids = Object.keys(res);
         let playerInstances: PlayerInstance[] = [];
