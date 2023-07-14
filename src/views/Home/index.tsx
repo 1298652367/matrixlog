@@ -8,11 +8,20 @@ const { Column, ColumnGroup } = Table;
 
 import './index.scss'
 
-interface Operation {
+type Result = {
+    [key: string]: FinalResult
+};
+type FinalResult = {
+    [key: string]: OptModul
+};
+type OptModul = {
+    [key: string]: Operation[]
+}
+type Operation = {
     Operation: string;
     Timestamp: string;
     Param: string;
-}
+};
 
 interface PlayerInstance {
     instance_id: string;
@@ -20,8 +29,8 @@ interface PlayerInstance {
     end_time: string;
 }
 
-interface InstanceModule {
-    [key: string]: Operation[];
+type InstanceModule = {
+    [key: string]: string[];
 }
 type CurrentModul = Record<string, string[]>;
 
@@ -32,16 +41,16 @@ type CurrentViewModul = {
 }[];
 
 const { Dragger } = Upload;
-let items: CollapseProps['items']=[]
+
 
 const Home: React.FC = () => {
+    
+
     const styles = {
         color: 'lightgrey',
         fontSize: '15px',
     };
-    const onChange = (key: string | string[]) => {
-        console.log(key);
-    };
+   
 
     const props: UploadProps = {
         name: 'file',
@@ -68,69 +77,12 @@ const Home: React.FC = () => {
             console.log('Dropped files', e.dataTransfer.files);
         },
     };
-    const [playerInstances, setPlayerInstances] = useState<PlayerInstance[]>([]);
-    const [currentModules, setCurrentModules] = useState<CurrentModul[]>([]);
 
-    const analysisLog = async (file: File) => {
-        let currentModules: CurrentModul = {}
-        const response = await log_analysis(file);
-        let strres = response.data.result;
-        
-        let res = eval("(" + strres + ")");
-        let ids = Object.keys(res);
-        let playerInstances: PlayerInstance[] = [];
-        let instanceModules: InstanceModule[] = [];
-        let id: string
-
-        for (id of ids) {
-            let finalResult = res[id].FinalResult;
-            if (finalResult === undefined) {
-                continue;
-            }
-            let modules = Object.keys(finalResult);
-
-            if (instanceModules[parseInt(id)] === undefined) {
-
-                instanceModules[parseInt(id)] = {};
-            }
-            let playerInstance: PlayerInstance = { instance_id: id, start_time: '空', end_time: '空' };
-            let instanceModule = instanceModules[parseInt(id)];
-            for (let module of modules) {
-                let operations = res[id].FinalResult[module];
-                if (instanceModule[module] === undefined) {
-                    instanceModule[module] = [];
-                }
-                let moduleOps = instanceModule[module];
-                for (let operation of operations) {
-                    if (operation.Operation === 'Construct') {
-                        playerInstance.start_time = operation.Timestamp;
-                    }
-                    if (operation.Operation === 'Destroy') {
-                        playerInstance.end_time = operation.Timestamp;
-                    }
-                    moduleOps.push(operation.Timestamp + ' ' + operation.Operation + ' ' + operation.Param);
-                }
-            }
-            playerInstances.push(playerInstance);
-        }
-        currentModules = instanceModules[playerInstances[0].instance_id];
-
-        setPlayerInstances(playerInstances);
-        setCurrentModules(currentModules);
-
-        currentModules = fun(currentModules)
-        console.log(currentModules)
-        items = currentModules;
-       
-    
-    };
-
-    
     const fun = (value: CurrentModul) => {
         const output: CurrentViewModul = [];
         Object.keys(value).forEach((k, i) => {
             output.push({
-                key: (i+1).toString(),
+                key: (i + 1).toString(),
                 label: k,
                 children: value[k].join('-'),
             })
@@ -138,7 +90,70 @@ const Home: React.FC = () => {
         return output
     }
 
-   
+
+
+    const [playerInstances,setPlayerInstances] = useState<PlayerInstance[]>([]);
+    const [items , setItems] = useState<CollapseProps['items']>([])
+    const analysisLog = async (file: File) => {
+        let currentModules: CurrentModul = {}
+        const response = await log_analysis(file);
+        let strres = response.data.result;
+
+        let res: Result = eval("(" + strres + ")");
+
+        let instanceModules: InstanceModule[] = [];
+
+        Object.keys(res).forEach((k1) => {
+            let finalResult: FinalResult = res[k1]
+            let playerInstance: PlayerInstance = { instance_id: k1, start_time: '空', end_time: '空' };
+            if (instanceModules[parseInt(k1)] === undefined) {
+                instanceModules[parseInt(k1)] = {};
+            }
+            let instanceModule: InstanceModule = instanceModules[parseInt(k1)]
+
+            Object.keys(finalResult).forEach((k2) => {
+                let optModul: OptModul = finalResult[k2]
+
+                Object.keys(optModul).forEach((k3) => {
+                    let operations: Operation[] = optModul[k3]
+
+                    if (instanceModule[k3] !== undefined) {
+                        instanceModule[k3] = []
+                    }
+                    // debugger
+                    operations.forEach((value) => {
+                        if (value.Operation === 'Construct') {
+                            playerInstance.start_time = value.Timestamp
+                        } else if (value.Operation === 'Destroy') {
+                            playerInstance.end_time = value.Timestamp
+                        }
+                        if (instanceModule[k3] !== undefined) {
+                            instanceModule[k3].push(value.Timestamp + ' ' + value.Operation + ' ' + value.Param)
+                        } else {
+                            instanceModule[k3] = [value.Timestamp + ' ' + value.Operation + ' ' + value.Param]
+                        }
+                    })
+                })
+
+            })
+            if (playerInstances !== undefined) {
+                playerInstances.push(playerInstance)
+            } else {
+                setPlayerInstances([playerInstance])
+            }
+
+        })
+    
+        currentModules = instanceModules[parseInt(playerInstances[0].instance_id)];
+
+        let ans: CurrentViewModul = fun(currentModules)
+
+        setPlayerInstances([...playerInstances])
+        setItems([...ans])
+    };
+
+
+
     return (
         <>
             <Dragger {...props} >
@@ -169,10 +184,10 @@ const Home: React.FC = () => {
                 <Col flex={2}>
                 </Col>
                 <Col flex={12}>
-                    
-                    <Collapse items={items} defaultActiveKey={['1']} onChange={onChange} >
-                        </Collapse>
-                    
+
+                    <Collapse items={items} defaultActiveKey={['1']}  >
+                    </Collapse>
+
                 </Col>
             </Row>
         </>
